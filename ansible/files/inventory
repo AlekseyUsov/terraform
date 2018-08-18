@@ -1,0 +1,8 @@
+[masters]
+openshift-master-[1:3].demo.li9.com
+
+[nodes]
+openshift-node-[1:4].demo.li9.com
+
+[lb]
+openshift.demo.li9.com

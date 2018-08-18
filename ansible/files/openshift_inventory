@@ -1,0 +1,40 @@
+[masters]
+openshift-master-[1:3].demo.li9.com
+
+[nodes]
+openshift-master-[1:3].demo.li9.com openshift_node_schedulable=false
+openshift-node-1.demo.li9.com openshift_node_labels='{"region": "infra", "zone": "us-east-2a"}'
+openshift-node-2.demo.li9.com openshift_node_labels='{"region": "us-east-2", "zone": "us-east-2b"}'
+openshift-node-3.demo.li9.com openshift_node_labels='{"region": "us-east-2", "zone": "us-east-2c"}'
+openshift-node-4.demo.li9.com openshift_node_labels='{"region": "us-east-2", "zone": "us-east-2a"}'
+
+[etcd]
+openshift-master-[1:3].demo.li9.com
+
+[lb]
+openshift.demo.li9.com
+
+[nfs]
+openshift-master-1.demo.li9.com
+
+[OSEv3:vars]
+openshift_master_identity_providers=[{'name': 'li9_ldap', 'challenge': 'true', 'login': 'true', 'kind': 'LDAPPasswordIdentityProvider', 'mappingMethod': 'claim', 'attributes': {'id': ['dn'], 'email': ['mail'], 'name': ['cn'], 'preferredUsername': ['uid']}, 'insecure': 'true', 'bindDN': 'uid=openshift_admin,cn=users,cn=accounts,dc=demo,dc=li9,dc=com', 'bindPassword': '29TP5gO8oC#9', 'url': 'ldap://idm.demo.li9.com/cn=users,cn=accounts,dc=demo,dc=li9,dc=com?uid'}]
+openshift_deployment_type=openshift-enterprise
+openshift_master_default_subdomain=openshift.demo.li9.com
+openshift_disable_check=memory_availability,disk_availability
+openshift_master_cluster_hostname=openshift.demo.li9.com
+openshift_master_cluster_public_hostname=openshift.demo.li9.com
+openshift_metrics_install_metrics=True
+openshift_metrics_hawkular_hostname=hawkular-metrics.openshift.demo.li9.com
+openshift_hosted_etcd_storage_kind=nfs
+openshift_hosted_etcd_storage_nfs_options="*(rw,root_squash,sync,no_wdelay)"
+openshift_hosted_etcd_storage_nfs_directory=/opt/osev3-etcd
+openshift_hosted_etcd_storage_volume_name=etcd-vol1
+openshift_hosted_etcd_storage_volume_size=1G
+openshift_hosted_etcd_storage_labels={'storage': 'etcd'}
+
+[OSEv3:children]
+masters
+nodes
+etcd
+lb

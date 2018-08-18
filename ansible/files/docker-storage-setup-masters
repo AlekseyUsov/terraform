@@ -1,0 +1,2 @@
+STORAGE_DRIVER=overlay2
+VG=docker-vg

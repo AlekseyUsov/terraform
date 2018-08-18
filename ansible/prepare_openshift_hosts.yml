@@ -1,0 +1,116 @@
+---
+- name: Prepare OpenShift Hosts
+  hosts: all
+  remote_user: ec2-user
+  become: true
+
+  vars_prompt:
+  - name: "RHN_USERNAME"
+    prompt: "Enter your RHN username"
+  - name: "RHN_PASSWORD"
+    prompt: "Enter your RHN password"
+
+  tasks:
+  - name: Set hostnames
+    hostname:
+      name: '{{ inventory_hostname }}'
+  - name: Register systems and attach them to the pool
+    redhat_subscription:
+      username: '{{ RHN_USERNAME }}'
+      password: '{{ RHN_PASSWORD }}'
+      pool: '8a85f98c6053dabe016054d0bc08105c'
+
+  - name: Enable repositories
+    command: 'subscription-manager repos --enable=rhel-7-server-rpms \
+              --enable=rhel-7-server-extras-rpms \
+              --enable=rhel-7-server-ose-3.9-rpms \
+              --enable=rhel-7-fast-datapath-rpms \
+              --enable=rhel-7-server-ansible-2.4-rpms'
+
+  - name: Install packages
+    yum:
+      name: '{{item}}'
+    with_items:
+      - git
+      - wget
+      - net-tools
+      - bridge-utils
+      - iptables-services
+      - bind-utils
+      - bash-completion
+      - kexec-tools
+      - sos
+      - psacct
+      - docker
+      - ansible
+      - httpd-tools
+      - java-1.8.0-openjdk-headless
+
+  - name: Update systems
+    yum:
+      name: '*'
+      state: latest
+
+  - name: Configure Docker storage on masters
+    copy:
+      src: files/docker-storage-setup-masters
+      dest: /etc/sysconfig/docker-storage-setup
+    when: "'masters' in group_names"
+
+  - name: Configure Docker storage on nodes
+    copy:
+      src: files/docker-storage-setup-nodes
+      dest: /etc/sysconfig/docker-storage-setup
+    when: "'nodes' in group_names"
+
+  - name: Setup Docker storage
+    command: docker-storage-setup
+
+  - name: Start and enable Docker
+    service:
+      name: docker
+      state: started
+      enabled: true
+
+  - name: Setup SSH access from master-1
+    copy:
+      src: files/id_rsa
+      dest: /root/.ssh/id_rsa
+      mode: 0400
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+
+  - lineinfile:
+      line: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCb9tHWnbAW2Su1XglCoLrm16LzWBfF/KvI76M96LjGNrzCLqFEHbJbuxXyE8w/j6bilVkaMeY9DevvEr81c8tznm9xZtb6Ihqs2sq9kta+MHl6bDVOpsqWiUi+FP3Wu2rkwQDJqhoODfH5S489BCH9cvB8RE2ZyI1fFgUhfDpJmgDxObZgFZVRgiKb2ni1EQisHpjnHbXguhXOOxTrRbwUGYXc3bk9qOHl7ueQYz5WE6OZxtIwIbGNJN2IOGHXezby+nUwppt74xMqwCqBLKkapO8gUZ/0wy/9RxikxRCG9bJAZeNPgSxeF0C8MSTXejNWQiYl+c8EWc1BoWdS3V23'
+      dest: /root/.ssh/authorized_keys
+      
+  - name: Collect masters' fingerprints
+    shell: for i in $(seq 1 3); do ssh-keyscan openshift-master-$i.demo.li9.com >> /root/.ssh/known_hosts; done
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+
+  - name: Collect nodes' fingerprints
+    shell: for i in $(seq 1 4); do ssh-keyscan openshift-node-$i.demo.li9.com >> /root/.ssh/known_hosts; done
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+
+  - name: Collect load balancer's fingerprint
+    shell: ssh-keyscan openshift.demo.li9.com >> /root/.ssh/known_hosts
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+
+  - name: Download OpenShift installer
+    git:
+      repo: https://github.com/openshift/openshift-ansible
+      dest: /root/openshift-ansible
+      version: release-3.9
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+
+  - name: Copy OpenShift cluster inventory
+    copy:
+      src: files/openshift_inventory
+      dest: /etc/ansible/openshift_inventory
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+
+  - name: Install OpenShift
+    command: ansible-playbook -i /etc/ansible/openshift_inventory playbooks/deploy_cluster.yml
+    args:
+      chdir: /root/openshift-ansible
+    when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+...

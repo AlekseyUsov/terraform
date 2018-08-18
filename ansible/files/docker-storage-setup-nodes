@@ -1,0 +1,3 @@
+STORAGE_DRIVER=overlay2
+DEVS=xvdb
+VG=docker-vg
