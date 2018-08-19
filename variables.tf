@@ -6,13 +6,9 @@ variable "amis" {
   }
 }
 
-variable "region" {
-  default = "us-east-2"
-}
+variable "instance_type" {}
 
-variable "instance_type" {
-  default = "t2.micro"
-}
+variable "region" {}
 
 variable "zones" {
   default = ["a", "b", "c"]

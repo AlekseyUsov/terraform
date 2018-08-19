@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "${var.region}"
+}
+
 resource "aws_instance" "openshift-master" {
   count = 3
   ami = "${lookup(var.amis, var.region)}"
@@ -14,16 +18,16 @@ resource "aws_instance" "openshift-master" {
     volume_size = "20"
     delete_on_termination = true
   }
-
   provisioner "remote-exec" {
     inline = [ "sudo subscription-manager unregister" ]
     when = "destroy"
     connection {
       type = "ssh"
-      host = "${self.public_dns}"
+      host = "${self.public_ip}"
       user = "${var.username}"
       private_key = "${file(var.private_key)}"
     }
+    on_failure = "continue"
   }
 }
 
@@ -49,16 +53,16 @@ resource "aws_instance" "openshift-node" {
     delete_on_termination = true
     device_name = "/dev/sdb"
   }
-
   provisioner "remote-exec" {
     inline = [ "sudo subscription-manager unregister" ]
     when = "destroy"
     connection {
       type = "ssh"
-      host = "${self.public_dns}"
+      host = "${self.public_ip}"
       user = "${var.username}"
       private_key = "${file(var.private_key)}"
     }
+    on_failure = "continue"
   }
 }
 
@@ -71,16 +75,16 @@ resource "aws_instance" "openshift" {
   tags = {
     Name = "openshift"
   }
-
   provisioner "remote-exec" {
     inline = [ "sudo subscription-manager unregister" ]
     when = "destroy"
     connection {
       type = "ssh"
-      host = "${self.public_dns}"
+      host = "${self.public_ip}"
       user = "${var.username}"
       private_key = "${file(var.private_key)}"
     }
+    on_failure = "continue"
   }
 }
 
