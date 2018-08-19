@@ -4,7 +4,7 @@ resource "aws_instance" "openshift-master" {
   instance_type = "${var.instance_type}"
   availability_zone = "${var.region}${element(var.zones, count.index)}"
   ebs_optimized = false
-  key_name = "ausov"
+  key_name = "${var.key_name}"
   security_groups = ["default"]
   tags = {
     Name = "openshift-master-${count.index+1}"
@@ -20,7 +20,7 @@ resource "aws_instance" "openshift-master" {
     when = "destroy"
     connection {
       type = "ssh"
-      host = "${self.public_ip}"
+      host = "${self.public_dns}"
       user = "${var.username}"
       private_key = "${file(var.private_key)}"
     }
@@ -33,7 +33,7 @@ resource "aws_instance" "openshift-node" {
   instance_type = "${var.instance_type}"
   availability_zone = "${var.region}${element(var.zones, count.index)}"
   ebs_optimized = false
-  key_name = "ausov"
+  key_name = "${var.key_name}"
   security_groups = ["default"]
   tags = {
     Name = "openshift-node-${count.index+1}"
@@ -55,7 +55,7 @@ resource "aws_instance" "openshift-node" {
     when = "destroy"
     connection {
       type = "ssh"
-      host = "${self.public_ip}"
+      host = "${self.public_dns}"
       user = "${var.username}"
       private_key = "${file(var.private_key)}"
     }
@@ -66,7 +66,7 @@ resource "aws_instance" "openshift" {
   ami = "${lookup(var.amis, var.region)}"
   instance_type = "${var.instance_type}"
   ebs_optimized = false
-  key_name = "ausov"
+  key_name = "${var.key_name}"
   security_groups  = ["default"]
   tags = {
     Name = "openshift"
@@ -77,7 +77,7 @@ resource "aws_instance" "openshift" {
     when = "destroy"
     connection {
       type = "ssh"
-      host = "${self.public_ip}"
+      host = "${self.public_dns}"
       user = "${var.username}"
       private_key = "${file(var.private_key)}"
     }
@@ -100,7 +100,7 @@ resource "aws_eip" "openshift" {
 
 resource "aws_route53_record" "openshift-master" {
   count = 3
-  zone_id = "ZG1LSIRFXEMSJ"
+  zone_id = "${var.zone_id}"
   name = "openshift-master-${count.index+1}"
   type = "A"
   ttl = "300"
@@ -109,7 +109,7 @@ resource "aws_route53_record" "openshift-master" {
 
 resource "aws_route53_record" "openshift-node" {
   count = 4
-  zone_id = "ZG1LSIRFXEMSJ"
+  zone_id = "${var.zone_id}"
   name = "openshift-node-${count.index+1}"
   type = "A"
   ttl = "300"
@@ -117,7 +117,7 @@ resource "aws_route53_record" "openshift-node" {
 }
 
 resource "aws_route53_record" "openshift" {
-  zone_id = "ZG1LSIRFXEMSJ"
+  zone_id = "${var.zone_id}"
   name = "openshift"
   type = "A"
   ttl = "300"
@@ -125,7 +125,7 @@ resource "aws_route53_record" "openshift" {
 }
 
 resource "aws_route53_record" "openshift-apps" {
-  zone_id = "ZG1LSIRFXEMSJ"
+  zone_id = "${var.zone_id}"
   name = "*.openshift"
   type = "CNAME"
   ttl = "300"

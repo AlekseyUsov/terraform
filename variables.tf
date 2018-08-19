@@ -18,10 +18,12 @@ variable "zones" {
   default = ["a", "b", "c"]
 }
 
-variable "private_key" {
-  default = "~/.ssh/ausov.pem"
-}
+variable "private_key" {}
 
 variable "username" {
   default = "ec2-user"
 }
+
+variable "key_name" {}
+
+variable "zone_id" {}

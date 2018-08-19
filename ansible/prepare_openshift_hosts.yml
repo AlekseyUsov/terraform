@@ -73,14 +73,12 @@
       enabled: true
 
   - name: Setup SSH access from master-1
-    copy:
-      src: files/id_rsa
-      dest: /root/.ssh/id_rsa
-      mode: 0400
+    shell: ssh-keygen -q -N "" -f /root/.ssh/id_rsa && cat /root/.ssh/id_rsa.pub
     when: inventory_hostname == 'openshift-master-1.demo.li9.com'
+    register: master_ssh_public_key
 
-  - lineinfile:
-      line: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCb9tHWnbAW2Su1XglCoLrm16LzWBfF/KvI76M96LjGNrzCLqFEHbJbuxXyE8w/j6bilVkaMeY9DevvEr81c8tznm9xZtb6Ihqs2sq9kta+MHl6bDVOpsqWiUi+FP3Wu2rkwQDJqhoODfH5S489BCH9cvB8RE2ZyI1fFgUhfDpJmgDxObZgFZVRgiKb2ni1EQisHpjnHbXguhXOOxTrRbwUGYXc3bk9qOHl7ueQYz5WE6OZxtIwIbGNJN2IOGHXezby+nUwppt74xMqwCqBLKkapO8gUZ/0wy/9RxikxRCG9bJAZeNPgSxeF0C8MSTXejNWQiYl+c8EWc1BoWdS3V23'
+  - copy:
+      content: "{{ hostvars['openshift-master-1.demo.li9.com']['master_ssh_public_key'].stdout }}"
       dest: /root/.ssh/authorized_keys
       
   - name: Collect masters' fingerprints
