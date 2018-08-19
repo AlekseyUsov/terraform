@@ -7,6 +7,11 @@ terraform init
 AWS_ACCESS_KEY_ID=<YOUR_ACCESS_KEY> AWS_SECRET_ACCESS_KEY=<YOUR_SECRET_KEY> terraform apply
 ```
 
+To install OpenShift 3.9, run:
+```
+ansible-playbook -i ansible/files/inventory ansible/prepare_openshift_hosts.yml --private-key <Path to your private SSH key>
+```
+
 To destroy infrastructure, run:
 ```
 AWS_ACCESS_KEY_ID=<YOUR_ACCESS_KEY> AWS_SECRET_ACCESS_KEY=<YOUR_SECRET_KEY> terraform destroy
