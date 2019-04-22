@@ -14,18 +14,28 @@
   - name: Set hostnames
     hostname:
       name: '{{ inventory_hostname }}'
+
+  - copy:
+      content: '{{ inventory_hostname }}'
+      dest: /etc/hostname
+
+  - name: Set /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ ansible_eth0['ipv4']['address'] }} {{ inventory_hostname }}"
+
   - name: Register systems and attach them to the pool
     redhat_subscription:
       username: '{{ RHN_USERNAME }}'
       password: '{{ RHN_PASSWORD }}'
-      pool: '8a85f98c6053dabe016054d0bc08105c'
+      pool: '8a85f99c655dbbe60165674786440080'
 
   - name: Enable repositories
     command: 'subscription-manager repos --enable=rhel-7-server-rpms \
               --enable=rhel-7-server-extras-rpms \
-              --enable=rhel-7-server-ose-3.9-rpms \
+              --enable=rhel-7-server-ose-3.11-rpms \
               --enable=rhel-7-fast-datapath-rpms \
-              --enable=rhel-7-server-ansible-2.4-rpms'
+              --enable=rhel-7-server-ansible-2.6-rpms'
 
   - name: Install packages
     yum:
@@ -45,6 +55,7 @@
       - ansible
       - httpd-tools
       - java-1.8.0-openjdk-headless
+      - skopeo
 
   - name: Update systems
     yum:
@@ -97,7 +108,7 @@
     git:
       repo: https://github.com/openshift/openshift-ansible
       dest: /root/openshift-ansible
-      version: release-3.9
+      version: release-3.11
     when: inventory_hostname == 'openshift-master-1.demo.li9.com'
 
   - name: Copy OpenShift cluster inventory
@@ -106,8 +117,25 @@
       dest: /etc/ansible/openshift_inventory
     when: inventory_hostname == 'openshift-master-1.demo.li9.com'
 
+  - name: Creating SDN network plugin directories
+    file:
+      state: directory
+      recurse: true
+      dest: /etc/cni/net.d
+      owner: root
+      group: root
+    when: inventory_hostname != 'openshift.demo.li9.com'
+
+  - name: Initializing SDN network plugin
+    copy:
+      src: files/80-openshift-network.conf
+      dest: /etc/cni/net.d/80-openshift-network.conf
+      owner: root
+      group: root
+    when: inventory_hostname != 'openshift.demo.li9.com'
+
   - name: Install OpenShift
-    command: ansible-playbook -i /etc/ansible/openshift_inventory playbooks/deploy_cluster.yml
+    command: ansible-playbook -i /etc/ansible/openshift_inventory playbooks/deploy_cluster.yml -f 10 -e oreg_auth_user='{{ RHN_USERNAME }}' -e oreg_auth_password='{{ RHN_PASSWORD }}'
     args:
       chdir: /root/openshift-ansible
     when: inventory_hostname == 'openshift-master-1.demo.li9.com'
